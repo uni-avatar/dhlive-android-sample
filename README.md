@@ -87,6 +87,7 @@ POST /api/session/{id}/hangup         → 204
 | 有画面没声音 / 没画面 | 确认 `rtc.provider=agora`、token 未过期、入会后 `onUserJoined` 是否触发；真机需要麦克风权限 |
 | `加入频道失败` | token 过期或使用错误 uid；后端调 `/v1/realtime/sessions/{id}/reconnect` 换新凭证 |
 | 本地 HTTP 调试被拦 | Android 9+ 默认禁止明文 HTTP；用 HTTPS 入口，或临时在 `AndroidManifest.xml` 的 `<application>` 上加 `android:usesCleartextTraffic="true"`（不要带进生产） |
+| 会话创建成功、状态到 ready，但 `rtc.provider` 为空 / 没有 websocket | `GET /v1/realtime/sessions/{id}` 只返回公开视图，**不含 `rtc` 和 `websocket`**；RTC/控制 WS 凭证只出现在 `POST /v1/hosts/{id}/sessions` 的创建响应里。示例已按此修复（v0.1.1）：轮询只看 `status`，凭证从创建响应保留 |
 
 ## 相关文档
 

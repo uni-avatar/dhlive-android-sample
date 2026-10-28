@@ -78,6 +78,17 @@ class PlatformSession {
 
   bool get isReady => status == 'ready' || status == 'active';
   bool get isTerminal => status == 'ended' || status == 'failed';
+
+  /// The polled status comes from `GET /v1/realtime/sessions/{id}`, which is a
+  /// public view **without** RTC credentials or the control WebSocket. Keep
+  /// those from the create response.
+  PlatformSession withCredentialsFrom(PlatformSession source) => PlatformSession(
+        id: id,
+        status: status,
+        rtc: source.rtc,
+        websocketUrl: source.websocketUrl,
+        sessionToken: source.sessionToken,
+      );
 }
 
 /// Thin REST client for the public Digital Human API.
@@ -124,6 +135,8 @@ class DhliveApi {
     return PlatformSession.fromJson(_decode(response));
   }
 
+  /// Returns the public session view: status and metadata only. `rtc` and
+  /// `websocket` are stripped by the platform, so never join RTC from it.
   Future<PlatformSession> getSession(String sessionId) async {
     final response = await _client.get(
       Uri.parse('$baseUrl/v1/realtime/sessions/${Uri.encodeComponent(sessionId)}'),
@@ -132,18 +145,19 @@ class DhliveApi {
     return PlatformSession.fromJson(_decode(response));
   }
 
-  /// Polls the session until it is `ready`, then returns it.
+  /// Polls the session until it is `ready`, then returns it with the RTC and
+  /// control-WebSocket credentials captured from the create response.
   Future<PlatformSession> waitUntilReady(
-    String sessionId, {
+    PlatformSession created, {
     Duration timeout = const Duration(minutes: 2),
     void Function(PlatformSession session)? onPoll,
   }) async {
     final deadline = DateTime.now().add(timeout);
     var delay = const Duration(milliseconds: 500);
     while (DateTime.now().isBefore(deadline)) {
-      final session = await getSession(sessionId);
+      final session = await getSession(created.id);
       onPoll?.call(session);
-      if (session.isReady) return session;
+      if (session.isReady) return session.withCredentialsFrom(created);
       if (session.isTerminal) {
         throw DhliveApiException(409, '会话进入 ${session.status}，请重新创建');
       }

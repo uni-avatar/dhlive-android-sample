@@ -81,17 +81,19 @@ class _SessionPageState extends State<SessionPage> {
     _sessionId = created.id;
     _session = created;
     _log('会话 ${created.id} 已创建，状态 ${created.status}；等待 ready…');
+    // `rtc`/`websocket` only exist on this create response (201); GET polling
+    // returns a public view with those fields stripped.
     if (mounted) setState(() => _status = '等待主播准备（${created.status}）');
 
     final ready = await api.waitUntilReady(
-      created.id,
+      created,
       onPoll: (session) {
         _log('轮询状态：${session.status}');
         if (mounted) setState(() => _status = '等待主播准备（${session.status}）');
       },
     );
     _session = ready;
-    _log('会话 ready，rtc provider=${ready.rtc.provider}');
+    _log('会话 ready，rtc provider=${ready.rtc.provider}（凭据取自创建响应）');
 
     await _connectControlWebSocket(ready);
     return ready.rtc;

@@ -62,9 +62,11 @@ Content-Type: application/json
 ### 查询 / 结束
 
 ```http
-GET    {base}/v1/realtime/sessions/{id}   → 状态与 rtc
+GET    {base}/v1/realtime/sessions/{id}   → 公开状态视图（不含 rtc/websocket）
 DELETE {base}/v1/realtime/sessions/{id}   → 204，释放引擎
 ```
+
+> **重要**：`GET` 只返回状态与元数据，平台会把 `rtc` 和 `websocket` 剥离；RTC 凭证与 `session_token` 只存在于创建响应（201）里。App/后端必须保存创建响应的 `rtc`（和 `websocket`），轮询只用 `status` 判断是否 ready。示例 v0.1.1 起按此实现。
 
 ### 重连
 
