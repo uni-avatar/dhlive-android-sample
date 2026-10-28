@@ -297,19 +297,17 @@ class _SessionPageState extends State<SessionPage> {
   }
 
   /// Switches between the normal conversation layout and an immersive
-  /// landscape full-screen player, mirroring the web demo's fullscreen button.
+  /// portrait full-screen player, matching the web demo's 9:16 stage.
   Future<void> _setFullscreen(bool fullscreen) async {
     if (_fullscreen == fullscreen) return;
     if (fullscreen) {
-      await SystemChrome.setPreferredOrientations(const [
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    } else {
+      // Portrait fullscreen, like the web demo: do not rotate the device.
       await SystemChrome.setPreferredOrientations(const [
         DeviceOrientation.portraitUp,
       ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      await SystemChrome.setPreferredOrientations(const []);
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
     if (mounted) setState(() => _fullscreen = fullscreen);
@@ -366,9 +364,27 @@ class _SessionPageState extends State<SessionPage> {
   }
 
   Widget _buildFullscreen() {
+    // Keep the same 9:16 portrait stage as the web integration demo; on tall
+    // screens the black background letterboxes the video instead of stretching
+    // or rotating it.
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _videoStage(fullscreen: true),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: AspectRatio(
+              aspectRatio: 9 / 16,
+              child: _videoView(),
+            ),
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: SafeArea(bottom: false, left: false, child: _fullscreenToggle()),
+          ),
+        ],
+      ),
     );
   }
 

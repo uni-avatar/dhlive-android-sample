@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.3+4 (v0.1.3) — 2026-10-28
+
+### Fixed
+
+- Fullscreen now matches the web integration demo: stay in **portrait** and
+  present the video as a 9:16 stage filling the screen with black letterboxing,
+  instead of rotating to landscape.
+
 ## 1.0.2+3 (v0.1.2) — 2026-10-28
 
 ### Added

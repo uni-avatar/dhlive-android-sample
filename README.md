@@ -9,7 +9,7 @@
 - Demo 模式：App 输入平台地址、租户 API Key、主播 ID，直接创建平台会话。
 - 生产模式：粘贴后端下发的 `rtc` JSON，只加入 Agora 频道（App 不需要 API Key）。
 - Agora 视频渲染（`AgoraVideoView`）、远端用户上下线、麦克风静音/恢复。
-- **全屏观看**：画面右上角按钮切换横屏沉浸式全屏，再点或按返回键退出。
+- **全屏观看**：画面右上角按钮切换竖屏沉浸式全屏（9:16，与 `/integration-demo` 一致），再点或按返回键退出。
 - **输入记忆**：Demo 模式的租户 API Key 与主播 ID 自动保存在本机（App 私有存储），下次打开直接复用。
 - 控制 WebSocket：`session.initialize`、`session.end`、`asr_*` / `llm_*` 等事件落到日志面板。
 - 会话状态轮询（`preparing` → `ready`）、超时与错误提示、结束会话时 `DELETE /v1/realtime/sessions/{id}`。
