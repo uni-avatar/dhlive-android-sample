@@ -9,6 +9,8 @@
 - Demo 模式：App 输入平台地址、租户 API Key、主播 ID，直接创建平台会话。
 - 生产模式：粘贴后端下发的 `rtc` JSON，只加入 Agora 频道（App 不需要 API Key）。
 - Agora 视频渲染（`AgoraVideoView`）、远端用户上下线、麦克风静音/恢复。
+- **全屏观看**：画面右上角按钮切换横屏沉浸式全屏，再点或按返回键退出。
+- **输入记忆**：Demo 模式的租户 API Key 与主播 ID 自动保存在本机（App 私有存储），下次打开直接复用。
 - 控制 WebSocket：`session.initialize`、`session.end`、`asr_*` / `llm_*` 等事件落到日志面板。
 - 会话状态轮询（`preparing` → `ready`）、超时与错误提示、结束会话时 `DELETE /v1/realtime/sessions/{id}`。
 
@@ -23,7 +25,7 @@ App ◀── rtc {app_id, channel_id, user_id, token} ── 你的后端
 App ──Agora SDK joinChannel（发布麦克风、订阅音视频）──▶ 引擎
 ```
 
-本示例的 **Demo 模式** 为了单机可跑，把「创建会话 + 控制 WebSocket」也放进了 App，因此需要填租户 API Key。**不要把 API Key 写进正式 App**：它是最长期凭据，泄露后可创建/消耗你的会话。生产请只实现首页下方的「只接 RTC」模式，API Key 与控制 WS 留在后端。
+本示例的 **Demo 模式** 为了单机可跑，把「创建会话 + 控制 WebSocket」也放进了 App，因此需要填租户 API Key。**不要把 API Key 写进正式 App**：它是最长期凭据，泄露后可创建/消耗你的会话。Demo 模式会把 API Key 与主播 ID 保存在 App 私有存储（SharedPreferences）方便反复联调；生产请只实现首页下方的「只接 RTC」模式，API Key 与控制 WS 留在后端。
 
 ## 环境要求
 
@@ -46,7 +48,7 @@ flutter run -d <your-android-device>
 运行后：
 
 1. 「平台地址」默认 `https://dvideo.store`（可改成你的部署入口）。
-2. 填租户 **API Key**（`dh_live_...`）和 **主播 ID**（`dh_01...`）。
+2. 填租户 **API Key**（`dh_live_...`）和 **主播 ID**（`dh_01...`）；保存过一次后会自动带出，无需每次重填。
 3. 确认该主播已 `start`（控制台里为 `ready`），且所属租户有空闲引擎。
 4. 点「创建会话并加入」，等待状态从 `preparing` 变成 `ready` 并加入频道。
 5. 看到数字人画面后对着手机说话；日志面板会显示 `asr_final` / `llm_done` 等事件。

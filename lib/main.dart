@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dhlive_api.dart';
 import 'session_page.dart';
@@ -38,12 +39,41 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Demo-only convenience: the tenant key and host id are remembered in the
+  // app's private preferences so the operator does not retype them for every
+  // test. Production apps must keep the tenant key on their backend.
+  static const _apiKeyPref = 'dhlive.demo.api_key';
+  static const _hostIdPref = 'dhlive.demo.host_id';
+
   final _baseUrl = TextEditingController(text: 'https://dvideo.store');
   final _apiKey = TextEditingController();
   final _hostId = TextEditingController();
   final _userId = TextEditingController(text: 'android_sample_user');
   final _rtcJson = TextEditingController();
   bool _obscureKey = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSavedInputs();
+  }
+
+  Future<void> _restoreSavedInputs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final apiKey = prefs.getString(_apiKeyPref);
+    final hostId = prefs.getString(_hostIdPref);
+    setState(() {
+      if (apiKey != null && apiKey.isNotEmpty) _apiKey.text = apiKey;
+      if (hostId != null && hostId.isNotEmpty) _hostId.text = hostId;
+    });
+  }
+
+  Future<void> _rememberInputs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_apiKeyPref, _apiKey.text.trim());
+    await prefs.setString(_hostIdPref, _hostId.text.trim());
+  }
 
   @override
   void dispose() {
@@ -55,7 +85,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _openDemoSession() {
+  Future<void> _openDemoSession() async {
     final baseUrl = _baseUrl.text.trim();
     final apiKey = _apiKey.text.trim();
     final hostId = _hostId.text.trim();
@@ -63,6 +93,8 @@ class _HomePageState extends State<HomePage> {
       _snack('请填写平台地址、API Key 和主播 ID');
       return;
     }
+    await _rememberInputs();
+    if (!mounted) return;
     final api = DhliveApi(baseUrl: baseUrl, apiKey: apiKey);
     Navigator.of(context)
         .push(MaterialPageRoute<void>(

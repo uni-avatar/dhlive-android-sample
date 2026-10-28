@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.2+3 (v0.1.2) — 2026-10-28
+
+### Added
+
+- Fullscreen toggle on the video stage: immersive landscape playback with a
+  second tap or the Android back button to return to the conversation layout.
+- Remember the demo tenant API key and host id in the app's private
+  preferences, so they no longer need to be retyped for every test.
+
 ## 1.0.1+2 (v0.1.1) — 2026-10-28
 
 ### Fixed

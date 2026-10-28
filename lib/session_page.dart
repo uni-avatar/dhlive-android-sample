@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/io.dart';
 
@@ -50,6 +51,7 @@ class _SessionPageState extends State<SessionPage> {
   bool _joined = false;
   bool _muted = false;
   bool _ending = false;
+  bool _fullscreen = false;
 
   @override
   void initState() {
@@ -282,6 +284,10 @@ class _SessionPageState extends State<SessionPage> {
 
   @override
   void dispose() {
+    if (_fullscreen) {
+      SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
     _wsEvents?.cancel();
     _ws?.sink.close();
     _engine?.leaveChannel();
@@ -290,9 +296,95 @@ class _SessionPageState extends State<SessionPage> {
     super.dispose();
   }
 
+  /// Switches between the normal conversation layout and an immersive
+  /// landscape full-screen player, mirroring the web demo's fullscreen button.
+  Future<void> _setFullscreen(bool fullscreen) async {
+    if (_fullscreen == fullscreen) return;
+    if (fullscreen) {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.portraitUp,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+    if (mounted) setState(() => _fullscreen = fullscreen);
+  }
+
+  Widget _videoView() {
+    if (_remoteUid == null || _engine == null) {
+      return Center(
+        child: Text(
+          widget.rtcOnly == null ? '等待主播准备并加入频道…' : '等待远端视频…',
+          style: const TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+    return AgoraVideoView(
+      controller: VideoViewController.remote(
+        rtcEngine: _engine!,
+        canvas: VideoCanvas(uid: _remoteUid),
+        connection: _connection ?? RtcConnection(),
+        useAndroidSurfaceView: true,
+      ),
+    );
+  }
+
+  Widget _fullscreenToggle() {
+    return Material(
+      color: Colors.black45,
+      shape: const CircleBorder(),
+      child: IconButton(
+        key: const ValueKey('fullscreen-toggle'),
+        tooltip: _fullscreen ? '退出全屏' : '全屏',
+        color: Colors.white,
+        icon: Icon(_fullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+        onPressed: () => _setFullscreen(!_fullscreen),
+      ),
+    );
+  }
+
+  Widget _videoStage({required bool fullscreen}) {
+    return ColoredBox(
+      color: Colors.black,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _videoView(),
+          Positioned(
+            top: fullscreen ? 12 : 8,
+            right: fullscreen ? 12 : 8,
+            child: SafeArea(bottom: false, left: false, child: _fullscreenToggle()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullscreen() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: _videoStage(fullscreen: true),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    return PopScope(
+      canPop: !_fullscreen,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _fullscreen) _setFullscreen(false);
+      },
+      child: _fullscreen ? _buildFullscreen() : _buildNormal(theme),
+    );
+  }
+
+  Widget _buildNormal(ThemeData theme) {
     return Scaffold(
       appBar: AppBar(title: const Text('DHLive 数字人会话')),
       body: Column(
@@ -312,25 +404,7 @@ class _SessionPageState extends State<SessionPage> {
           ),
           Expanded(
             flex: 3,
-            child: Container(
-              color: Colors.black,
-              width: double.infinity,
-              child: _remoteUid != null && _engine != null
-                  ? AgoraVideoView(
-                      controller: VideoViewController.remote(
-                        rtcEngine: _engine!,
-                        canvas: VideoCanvas(uid: _remoteUid),
-                        connection: _connection ?? RtcConnection(),
-                        useAndroidSurfaceView: true,
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        widget.rtcOnly == null ? '等待主播准备并加入频道…' : '等待远端视频…',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                    ),
-            ),
+            child: _videoStage(fullscreen: false),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
