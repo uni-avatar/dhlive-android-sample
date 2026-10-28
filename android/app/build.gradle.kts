@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.dhlive.dhlive_android_sample"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

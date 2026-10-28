@@ -5,6 +5,10 @@ allprojects {
     }
 }
 
+// Agora/AndroidX AARs need a modern compileSdk; the Flutter plugins read it
+// from the root project's extra properties (safeExtGet).
+extra["compileSdkVersion"] = 37
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
